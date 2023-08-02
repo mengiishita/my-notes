@@ -1,14 +1,25 @@
-import React, { FormEvent, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { FormEvent, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import CreatableReactSelect from "react-select/creatable";
+import { NoteFormProps, Tag } from "../../types";
+import { v4 as uuidV4 } from "uuid";
 
-const NoteForm = () => {
+const NoteForm = ({ onSubmit, onAddTag, availableTags }: NoteFormProps) => {
   const titleRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const navigate = useNavigate();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    onSubmit({
+      title: titleRef.current!.value,
+      markdown: bodyRef.current!.value,
+      tags: selectedTags,
+    });
+    navigate("..");
   };
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="flex flex-col">
@@ -22,6 +33,7 @@ const NoteForm = () => {
                 ref={titleRef}
                 type="text"
                 name="title"
+                required
                 className="shadow appearance-none border rounded w-[300px] py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               />
             </div>
@@ -32,7 +44,27 @@ const NoteForm = () => {
                 Tags
               </label>
               <div className="w-[300px]">
-                <CreatableReactSelect isMulti />
+                <CreatableReactSelect
+                  isMulti
+                  value={selectedTags.map((tag) => {
+                    return { label: tag.label, value: tag.id };
+                  })}
+                  onChange={(tags) => {
+                    setSelectedTags(
+                      tags.map((tag) => {
+                        return { label: tag.label, id: tag.value };
+                      })
+                    );
+                  }}
+                  onCreateOption={(label) => {
+                    const newTag = { id: uuidV4(), label };
+                    onAddTag(newTag);
+                    setSelectedTags((prev) => [...prev, newTag]);
+                  }}
+                  options={availableTags.map((tag) => {
+                    return { label: tag.label, value: tag.id };
+                  })}
+                />
               </div>
             </div>
           </div>
@@ -46,6 +78,7 @@ const NoteForm = () => {
             ref={bodyRef}
             rows={15}
             name="body"
+            required
             className="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
